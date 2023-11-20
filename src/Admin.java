@@ -210,10 +210,12 @@ public class Admin {
         String board_sql2 = "SELECT * FROM BOARD ORDER BY place_id, floor";
         try (PreparedStatement statement = connection.prepareStatement(board_sql2)) {
             try (ResultSet resultSet = statement.executeQuery()) {
-                while (resultSet.next()) {
-                    System.out.println("PLACE:" + resultSet.getInt(2) + " FLOOR:" + resultSet.getInt(5) + " BOARD:" + resultSet.getInt(1)+ ". " + resultSet.getString(3));
+                if (!resultSet.next()) {
+                    throw new SQLException("No Board Found");
                 }
-                System.out.println();
+                do {
+                    System.out.println("PLACE:" + resultSet.getInt(2) + " FLOOR:" + resultSet.getInt(5) + " BOARD:" + resultSet.getInt(1)+ ". " + resultSet.getString(3));
+                } while (resultSet.next());
             }
         } catch (SQLException e){
             System.out.println(e.getMessage());
@@ -222,18 +224,20 @@ public class Admin {
         System.out.print("Insert board number: ");
         int board2 = sc.nextInt();
         System.out.println("-----------------------------------------");
-        String board_sql3 = "SELECT BOARD.place_id, BOARD.board_id, BOARD.board_name, BOARD.slot, BOARD.floor, SUM(POST.size) AS TotalPostSize FROM BOARD LEFT JOIN POST ON BOARD.board_id = POST.board_id WHERE BOARD.board_id = ? AND POST.status = 'approved' GROUP BY BOARD.place_id, BOARD.board_id, BOARD.board_name, BOARD.slot, BOARD.floor;";
+        String board_sql3 = "SELECT BOARD.place_id, BOARD.board_id, BOARD.board_name, BOARD.slot, BOARD.floor, COALESCE(SUM(CASE WHEN POST.status = 'approved' THEN POST.size ELSE 0 END), 0) AS TotalPostSize FROM BOARD LEFT OUTER JOIN POST ON BOARD.board_id = POST.board_id WHERE BOARD.board_id = ? GROUP BY BOARD.place_id, BOARD.board_id, BOARD.board_name, BOARD.slot, BOARD.floor";
         try (PreparedStatement statement = connection.prepareStatement(board_sql3)) {
             statement.setInt(1, board2);
             try (ResultSet resultSet = statement.executeQuery()) {
-                while (resultSet.next()) {
+                if (!resultSet.next()) {
+                    throw new SQLException("No Board Found");
+                }
+                do {
                     System.out.println("Place ID: " + resultSet.getInt(1));
                     System.out.println("Board ID: " + resultSet.getInt(2));
                     System.out.println("Board name: " + resultSet.getString(3));
-                    System.out.println("Board size: " + resultSet.getInt(4));
+                    System.out.println("Board slot: " + resultSet.getInt(6) + "/" + resultSet.getInt(4));
                     System.out.println("Board floor: " + resultSet.getInt(5));
-                    System.out.println("Total post size: " + resultSet.getInt(6));
-                }
+                } while (resultSet.next());
             }
         } catch (SQLException e){
             System.out.println(e.getMessage());
@@ -247,11 +251,13 @@ public class Admin {
         String place_sql = "SELECT * FROM PLACE";
         try (PreparedStatement statement = connection.prepareStatement(place_sql)) {
             try (ResultSet resultSet = statement.executeQuery()) {
-                while (resultSet.next()) {
-                    System.out.print(resultSet.getInt(2) + ". " + resultSet.getString(3) + " number of floors: " + resultSet.getInt(4) + " ");
+                if (!resultSet.next()) {
+                    throw new SQLException("No Place Found");
                 }
+                do {
+                    System.out.println(resultSet.getInt(2) + ". " + resultSet.getString(3) + " number of floors: " + resultSet.getInt(4) + " ");
+                } while (resultSet.next());
             }
-            System.out.println();
         } catch (SQLException e){
             System.out.println(e.getMessage());
         }
@@ -263,9 +269,12 @@ public class Admin {
         try (PreparedStatement statement = connection.prepareStatement(floor_sql)) {
             statement.setInt(1, place);
             try (ResultSet resultSet = statement.executeQuery()) {
-                while (resultSet.next()) {
-                    maxfloor = resultSet.getInt(1);
+                if (!resultSet.next()) {
+                    throw new SQLException("No Place Found");
                 }
+                do {
+                    maxfloor = resultSet.getInt(1);
+                } while (resultSet.next());
             }
             System.out.println();
         } catch (SQLException e){
@@ -303,12 +312,15 @@ public class Admin {
         System.out.println("-----------------------------------------");
 
         // BOARD 테이블 출력
-        String board_sql = "SELECT * FROM BOARD";
+        String board_sql = "SELECT * FROM BOARD ORDER BY place_id, floor";
         try (PreparedStatement statement = connection.prepareStatement(board_sql)) {
             try (ResultSet resultSet = statement.executeQuery()) {
-                while (resultSet.next()) {
-                    System.out.print(resultSet.getInt("board_id") + ". " + resultSet.getString("board_name") + " ");
+                if (!resultSet.next()) {
+                    throw new SQLException("No Board Found");
                 }
+                do {
+                    System.out.print(resultSet.getInt("board_id") + ". " + resultSet.getString("board_name") + " ");
+                } while (resultSet.next());
                 System.out.println();
             }
         } catch (SQLException e) {
@@ -371,9 +383,12 @@ public class Admin {
         String place_sql3 = "SELECT * FROM PLACE";
         try (PreparedStatement statement = connection.prepareStatement(place_sql3)) {
             try (ResultSet resultSet = statement.executeQuery()) {
-                while (resultSet.next()) {
-                    System.out.print(resultSet.getInt(2) + ". " + resultSet.getString(3) + " ");
+                if (!resultSet.next()) {
+                    throw new SQLException("No Place Found");
                 }
+                do {
+                    System.out.print(resultSet.getInt(2) + ". " + resultSet.getString(3) + " ");
+                } while (resultSet.next());
             }
             System.out.println();
         } catch (SQLException e){
@@ -382,18 +397,21 @@ public class Admin {
         System.out.print("Insert place number: ");
         String place2 = sc.nextLine();
         System.out.println("-----------------------------------------");
-        String place_sql4 = "SELECT P.place_id, P.place_name, P.floor, COUNT(B.board_id) AS NumberOfBoards, SUM(B.slot) AS TotalSlots, SUM(B.slot) - IFNULL(SUM(PS.TotalPostSize),0) AS SlotPostSizeDifference FROM PLACE P LEFT JOIN BOARD B ON P.place_id = B.place_id LEFT JOIN (SELECT board_id, SUM(size) AS TotalPostSize FROM POST GROUP BY board_id) PS WHERE post.status = 'approved' ON B.board_id = PS.board_id WHERE P.place_id = ? GROUP BY P.place_id, P.place_name, P.floor";
+        String place_sql4 = "SELECT P.place_id, P.place_name, P.floor, COUNT(B.board_id) AS NumberOfBoards, SUM(B.slot) AS TotalSlots, SUM(B.slot) - IFNULL(SUM(PS.TotalPostSize),0) AS SlotPostSizeDifference FROM PLACE P LEFT JOIN BOARD B ON P.place_id = B.place_id LEFT JOIN (SELECT board_id, SUM(size) AS TotalPostSize FROM POST WHERE status = 'approved' GROUP BY board_id) PS ON B.board_id = PS.board_id WHERE P.place_id = ? GROUP BY P.place_id, P.place_name, P.floor";
         try (PreparedStatement statement = connection.prepareStatement(place_sql4)) {
             statement.setString(1, place2);
             try (ResultSet resultSet = statement.executeQuery()) {
-                while (resultSet.next()) {
+                if (!resultSet.next()) {
+                    throw new SQLException("No Place Found");
+                }
+                do {
                     System.out.println("Place ID: " + resultSet.getInt(1));
                     System.out.println("Place name: " + resultSet.getString(2));
                     System.out.println("Number of floors: " + resultSet.getString(3));
                     System.out.println("Number of boards: " + resultSet.getString(4));
                     System.out.println("Total slots: " + resultSet.getString(5));
                     System.out.println("Remaining Slots: " + resultSet.getString(6));
-                }
+                } while (resultSet.next());
             }
         } catch (SQLException e){
             System.out.println(e.getMessage());
@@ -406,9 +424,12 @@ public class Admin {
         String place_sql2 = "SELECT * FROM PLACE";
         try (PreparedStatement statement = connection.prepareStatement(place_sql2)) {
             try (ResultSet resultSet = statement.executeQuery()) {
-                while (resultSet.next()) {
-                    System.out.println(resultSet.getInt(2) + ". " + resultSet.getString(3) + " " + resultSet.getString(4));
+                if (!resultSet.next()) {
+                    throw new SQLException("No Place Found");
                 }
+                do {
+                    System.out.println(resultSet.getInt(2) + ". " + resultSet.getString(3) + " " + resultSet.getString(4) + "층");
+                } while (resultSet.next());
             }
         } catch (SQLException e){
             System.out.println(e.getMessage());
@@ -424,9 +445,12 @@ public class Admin {
         String place_sql = "SELECT * FROM PLACE";
         try (PreparedStatement statement = connection.prepareStatement(place_sql)) {
             try (ResultSet resultSet = statement.executeQuery()) {
-                while (resultSet.next()) {
-                    System.out.print(resultSet.getInt("place_id") + ". " + resultSet.getString("place_name") + " ");
+                if (!resultSet.next()) {
+                    throw new SQLException("No Place Found");
                 }
+                do {
+                    System.out.print(resultSet.getInt("place_id") + ". " + resultSet.getString("place_name") + " ");
+                } while (resultSet.next());
                 System.out.println();
             }
         } catch (SQLException e) {
@@ -499,9 +523,12 @@ public class Admin {
         String depart_sql = "SELECT * FROM DEPARTMENT";
         try (PreparedStatement statement = connection.prepareStatement(depart_sql)) {
             try (ResultSet resultSet = statement.executeQuery()) {
-                while (resultSet.next()) {
-                    System.out.print(resultSet.getInt(1) + ". " + resultSet.getString(2) + " ");
+                if (!resultSet.next()) {
+                    throw new SQLException("No Department");
                 }
+                do {
+                    System.out.print(resultSet.getInt(1) + ". " + resultSet.getString(2) + " ");
+                } while (resultSet.next());
             }
             System.out.println();
         } catch (SQLException e){
@@ -531,12 +558,15 @@ public class Admin {
         System.out.println("-----------------------------------------");
         System.out.println("user list");
         System.out.println("-----------------------------------------");
-        String query = "SELECT * FROM USER LEFT OUTER JOIN USER_DEPART ON USER.user_id = USER_DEPART.user_id LEFT OUTER JOIN DEPARTMENT ON USER_DEPART.depart_id = DEPARTMENT.depart_id";
+        String query = "SELECT USER.user_id, USER.name, USER.role, GROUP_CONCAT(DEPARTMENT.depart_name SEPARATOR ', ') AS departments FROM USER LEFT JOIN USER_DEPART ON USER.user_id = USER_DEPART.user_id LEFT JOIN DEPARTMENT ON USER_DEPART.depart_id = DEPARTMENT.depart_id GROUP BY USER.user_id, USER.name, USER.role";
         try (PreparedStatement statement = connection.prepareStatement(query)) {
             try (ResultSet resultSet = statement.executeQuery()) {
-                while (resultSet.next()) {
-                    System.out.println(resultSet.getInt(1) + ". " + resultSet.getString(2) + " " + resultSet.getString(4) + " " + resultSet.getString(5) + " " + resultSet.getString(10));
+                if (!resultSet.next()) {
+                    throw new SQLException("No User");
                 }
+                do {
+                    System.out.println(resultSet.getInt(1) + ". " + resultSet.getString(2) + " " + resultSet.getString(3) + " " + resultSet.getString(4));
+                } while (resultSet.next());
             }
         } catch (SQLException e){
             System.out.println(e.getMessage());
@@ -681,9 +711,12 @@ public class Admin {
         String query = "SELECT * FROM DEPARTMENT";
         try (PreparedStatement statement = connection.prepareStatement(query)) {
             try (ResultSet resultSet = statement.executeQuery()) {
-                while (resultSet.next()) {
-                    System.out.println(resultSet.getInt(1) + ". " + resultSet.getString(2));
+                if (!resultSet.next()) {
+                    throw new SQLException("No Department");
                 }
+                do {
+                    System.out.println(resultSet.getInt(1) + ". " + resultSet.getString(2));
+                } while (resultSet.next());
             }
         } catch (SQLException e){
             System.out.println(e.getMessage());
@@ -700,9 +733,12 @@ public class Admin {
         try (PreparedStatement statement = connection.prepareStatement(place_sql)) {
             statement.setInt(1, user.user_id);
             try (ResultSet resultSet = statement.executeQuery()) {
-                while (resultSet.next()) {
-                    System.out.println(resultSet.getInt(2) + ". " + resultSet.getString(3) + " number of floors: " + resultSet.getInt(4) + " ");
+                if (!resultSet.next()) {
+                    throw new SQLException("No Manageable Place");
                 }
+                do {
+                    System.out.println(resultSet.getInt(2) + ". " + resultSet.getString(3) + " number of floors: " + resultSet.getInt(4) + " ");
+                } while (resultSet.next());
             }
         } catch (SQLException e){
             System.out.println(e.getMessage());
@@ -732,9 +768,12 @@ public class Admin {
         try (PreparedStatement statement = connection.prepareStatement(place_board_sql)) {
             statement.setInt(1, place);
             try (ResultSet resultSet = statement.executeQuery()) {
-                while (resultSet.next()) {
-                    System.out.println(resultSet.getInt(1) + ". " + resultSet.getString(3) + " FLOOR:" + resultSet.getInt(5) + " SLOT:" + resultSet.getInt(4) + " REQUESTS:" + resultSet.getInt(6));
+                if (!resultSet.next()) {
+                    throw new SQLException("No Post Request");
                 }
+                do {
+                    System.out.println(resultSet.getInt(1) + ". " + resultSet.getString(3) + " FLOOR:" + resultSet.getInt(5) + " SLOT:" + resultSet.getInt(4) + " REQUESTS:" + resultSet.getInt(6));
+                } while (resultSet.next());
             }
         } catch (SQLException e){
             System.out.println(e.getMessage());
@@ -747,9 +786,12 @@ public class Admin {
         try (PreparedStatement statement = connection.prepareStatement(post_sql)) {
             statement.setInt(1, board);
             try (ResultSet resultSet = statement.executeQuery()) {
-                while (resultSet.next()) {
-                    System.out.println(resultSet.getInt(1) + ". USER: " + resultSet.getInt(2) + " BOARD: " + resultSet.getInt(3) + " POST: " + resultSet.getString(4) + " DESCRIPTION: " + resultSet.getString(7) + " SIZE: " + resultSet.getInt(6) + " TIMESTAMP: " + resultSet.getTimestamp(9));
+                if (!resultSet.next()) {
+                    throw new SQLException("No Post Request");
                 }
+                do {
+                    System.out.println("POST NO." + resultSet.getInt(1) +" USER: " + resultSet.getInt(2) +  " POST: " + resultSet.getString(4) + " DESCRIPTION: " + resultSet.getString(7) + " SIZE: " + resultSet.getInt(6) + " TIMESTAMP: " + resultSet.getTimestamp(9));
+                } while (resultSet.next());
             }
         } catch (SQLException e){
             System.out.println(e.getMessage());
@@ -868,9 +910,12 @@ public class Admin {
         String post_place = "SELECT * FROM PLACE";
         try (PreparedStatement statement = connection.prepareStatement(post_place)) {
             try (ResultSet resultSet = statement.executeQuery()) {
-                while (resultSet.next()) {
-                    System.out.print(resultSet.getInt(2) + ". " + resultSet.getString(3) + " ");
+                if (!resultSet.next()) {
+                    throw new SQLException("No Place Found");
                 }
+                do {
+                    System.out.print(resultSet.getInt(2) + ". " + resultSet.getString(3) + " ");
+                } while (resultSet.next());
             }
             System.out.println();
         } catch (SQLException e){
@@ -884,9 +929,12 @@ public class Admin {
         try (PreparedStatement statement = connection.prepareStatement(posts)) {
             statement.setInt(1, place_id);
             try (ResultSet resultSet = statement.executeQuery()) {
-                while (resultSet.next()) {
-                    System.out.println(resultSet.getInt(1) + ". BOARD: " + resultSet.getString(3) + " " + resultSet.getString(4) + " SIZE: " + resultSet.getString(6) + " STATUS: " + resultSet.getString(8) + " REQUEST TIME: " + resultSet.getTimestamp(9) + " EXPIRATION TIME: " + resultSet.getTimestamp(5));
+                if (!resultSet.next()) {
+                    throw new SQLException("No Post located in this place");
                 }
+                do {
+                    System.out.println("[STATUS]" + resultSet.getString(8) + "| " + resultSet.getInt(1) + ". BOARD: " + resultSet.getString(3) + " " + resultSet.getString(4) + " SIZE: " + resultSet.getString(6) + " REQUEST TIME: " + resultSet.getTimestamp(9) + " EXPIRATION TIME: " + resultSet.getTimestamp(5));
+                } while (resultSet.next());
             }
         } catch (SQLException e){
             System.out.println(e.getMessage());
