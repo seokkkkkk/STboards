@@ -215,7 +215,7 @@ public class Admin {
         try (PreparedStatement statement = connection.prepareStatement(board_sql2)) {
             BoardView(statement);
         } catch (SQLException e){
-            System.out.println(e.getMessage());
+            throw new IllegalStateException("Unexpected value: " + e.getMessage());
         }
         System.out.println("-----------------------------------------");
         System.out.print("Insert board number: ");
@@ -237,7 +237,7 @@ public class Admin {
                 } while (resultSet.next());
             }
         } catch (SQLException e){
-            System.out.println(e.getMessage());
+            throw new IllegalStateException("Unexpected value: " + e.getMessage());
         }
     }
 
@@ -312,7 +312,7 @@ public class Admin {
             statement.executeUpdate();
             System.out.println("Successfully created " + board_name);
         } catch (SQLException e){
-            System.out.println(e.getMessage());
+            throw new IllegalStateException("Unexpected value: " + e.getMessage());
         }
     }
     private static void DeleteBoard(Connection connection, User user) {
@@ -395,7 +395,7 @@ public class Admin {
             }
             System.out.println();
         } catch (SQLException e){
-            System.out.println(e.getMessage());
+            throw new IllegalStateException("Unexpected value: " + e.getMessage());
         }
         System.out.print("Insert place number: ");
         String place2 = sc.nextLine();
@@ -417,7 +417,7 @@ public class Admin {
                 } while (resultSet.next());
             }
         } catch (SQLException e){
-            System.out.println(e.getMessage());
+            throw new IllegalStateException("Unexpected value: " + e.getMessage());
         }
     }
     private static void ViewAllPlace(Connection connection) {
@@ -438,7 +438,7 @@ public class Admin {
                 } while (resultSet.next());
             }
         } catch (SQLException e) {
-            System.out.println(e.getMessage());
+            throw new IllegalStateException("Unexpected value: " + e.getMessage());
         }
     }
     private static void DeletePlace(Connection connection) {
@@ -460,7 +460,7 @@ public class Admin {
                 System.out.println();
             }
         } catch (SQLException e) {
-            System.out.println(e.getMessage());
+            throw new IllegalStateException("Unexpected value: " + e.getMessage());
         }
 
         System.out.println("-----------------------------------------");
@@ -538,7 +538,7 @@ public class Admin {
             }
             System.out.println();
         } catch (SQLException e){
-            System.out.println(e.getMessage());
+            throw new IllegalStateException("Unexpected value: " + e.getMessage());
         }
         System.out.println("-----------------------------------------");
         System.out.print("Insert place department ID: ");
@@ -556,7 +556,7 @@ public class Admin {
             statement.executeUpdate();
             System.out.println("Successfully created " + name);
         } catch (SQLException e){
-            System.out.println(e.getMessage());
+            throw new IllegalStateException("Unexpected value: " + e.getMessage());
         }
     }
 
@@ -575,7 +575,7 @@ public class Admin {
                 } while (resultSet.next());
             }
         } catch (SQLException e){
-            System.out.println(e.getMessage());
+            throw new IllegalStateException("Unexpected value: " + e.getMessage());
         }
     }
     private static void modifyUser(Connection connection) {
@@ -608,7 +608,7 @@ public class Admin {
                     statement.executeUpdate();
                     System.out.println("Successfully modified " + user);
                 } catch (SQLException e){
-                    System.out.println(e.getMessage());
+                    throw new IllegalStateException("Unexpected value: " + e.getMessage());
                 }
                 break;
             case 2:
@@ -623,7 +623,7 @@ public class Admin {
                         }
                     }
                 } catch (SQLException e){
-                    System.out.println(e.getMessage());
+                    throw new IllegalStateException("Unexpected value: " + e.getMessage());
                 }
                 sc.nextLine(); // 개행 문자 처리
                 System.out.print("Insert depart_id: ");
@@ -636,7 +636,7 @@ public class Admin {
                     statement.executeUpdate();
                     System.out.println("Successfully add " + depart + " to " + user);
                 } catch (SQLException e){
-                    System.out.println(e.getMessage());
+                    throw new IllegalStateException("Unexpected value: " + e.getMessage());
                 }
                 break;
             case 3:
@@ -652,7 +652,7 @@ public class Admin {
                         }
                     }
                 } catch (SQLException e){
-                    System.out.println(e.getMessage());
+                    throw new IllegalStateException("Unexpected value: " + e.getMessage());
                 }
                 sc.nextLine(); // 개행 문자 처리
                 System.out.print("Insert depart_id: ");
@@ -665,7 +665,7 @@ public class Admin {
                     statement.executeUpdate();
                     System.out.println("Successfully remove " + depart2 + " from " + user);
                 } catch (SQLException e){
-                    System.out.println(e.getMessage());
+                    throw new IllegalStateException("Unexpected value: " + e.getMessage());
                 }
                 break;
             default:
@@ -685,7 +685,7 @@ public class Admin {
             statement.setString(1, name);
             statement.executeUpdate();
         } catch (SQLException e){
-            System.out.println(e.getMessage());
+            throw new IllegalStateException("Unexpected value: " + e.getMessage());
         }
     }
 
@@ -703,7 +703,7 @@ public class Admin {
             statement.executeUpdate();
             System.out.println("Successfully deleted " + depart);
         } catch (SQLException e){
-            System.out.println(e.getMessage());
+            throw new IllegalStateException("Unexpected value: " + e.getMessage());
         }
     }
 
@@ -724,7 +724,7 @@ public class Admin {
                 } while (resultSet.next());
             }
         } catch (SQLException e){
-            System.out.println(e.getMessage());
+            throw new IllegalStateException("Unexpected value: " + e.getMessage());
         }
     }
 
@@ -744,7 +744,7 @@ public class Admin {
                 } while (resultSet.next());
             }
         } catch (SQLException e){
-            System.out.println(e.getMessage());
+            throw new IllegalStateException("Unexpected value: " + e.getMessage());
         }
     }
 
@@ -790,7 +790,7 @@ public class Admin {
                 } while (resultSet.next());
             }
         } catch (SQLException e){
-            System.out.println(e.getMessage());
+            throw new IllegalStateException("Unexpected value: " + e.getMessage());
         }
         System.out.println("-----------------------------------------");
         System.out.print("Insert board number: ");
@@ -808,7 +808,7 @@ public class Admin {
                 } while (resultSet.next());
             }
         } catch (SQLException e){
-            System.out.println(e.getMessage());
+            throw new IllegalStateException("Unexpected value: " + e.getMessage());
         }
         System.out.println("-----------------------------------------");
         System.out.print("Insert post number: ");
@@ -828,7 +828,7 @@ public class Admin {
                 }
             }
         } catch (SQLException e){
-            System.out.println(e.getMessage());
+            throw new IllegalStateException("Unexpected value: " + e.getMessage());
         }
         System.out.println("-----------------------------------------");
         System.out.println("1. Cancel Post");
@@ -850,7 +850,7 @@ public class Admin {
                         }
                     }
                 } catch (SQLException e){
-                    System.out.println(e.getMessage());
+                    throw new IllegalStateException("Unexpected value: " + e.getMessage());
                 }
                 PlaceValidationCheck(connection, user, placeid);
                 String query = "UPDATE POST SET status = 'cancelled' WHERE post_id = ?";
@@ -859,7 +859,7 @@ public class Admin {
                     statement.executeUpdate();
                     System.out.println("Successfully cancelled " + post);
                 } catch (SQLException e){
-                    System.out.println(e.getMessage());
+                    throw new IllegalStateException("Unexpected value: " + e.getMessage());
                 }
                 break;
             case 2:
@@ -892,7 +892,7 @@ public class Admin {
                 } while (resultSet.next());
             }
         } catch (SQLException e){
-            System.out.println(e.getMessage());
+            throw new IllegalStateException("Unexpected value: " + e.getMessage());
         }
         System.out.println("-----------------------------------------");
         System.out.print("Insert board number: ");
@@ -910,7 +910,7 @@ public class Admin {
                 } while (resultSet.next());
             }
         } catch (SQLException e){
-            System.out.println(e.getMessage());
+            throw new IllegalStateException("Unexpected value: " + e.getMessage());
         }
         System.out.println("-----------------------------------------");
         System.out.print("Insert post number: ");
@@ -927,7 +927,7 @@ public class Admin {
                 }
             }
         } catch (SQLException e) {
-            System.out.println(e.getMessage());
+            throw new IllegalStateException("Unexpected value: " + e.getMessage());
         }
 
         // BOARD의 사용 가능한 slot 크기 계산
@@ -948,7 +948,7 @@ public class Admin {
                 }
             }
         } catch (SQLException e) {
-            System.out.println(e.getMessage());
+            throw new IllegalStateException("Unexpected value: " + e.getMessage());
         }
 
         if (postSize > availableSlots) {
@@ -970,7 +970,7 @@ public class Admin {
                 }
             }
         } catch (SQLException e){
-            System.out.println(e.getMessage());
+            throw new IllegalStateException("Unexpected value: " + e.getMessage());
         }
         System.out.println("-----------------------------------------");
         System.out.println("1. Approve");
@@ -988,7 +988,7 @@ public class Admin {
                     statement.executeUpdate();
                     System.out.println("Successfully approved " + post);
                 } catch (SQLException e){
-                    System.out.println(e.getMessage());
+                    throw new IllegalStateException("Unexpected value: " + e.getMessage());
                 }
                 break;
             case 2:
@@ -998,7 +998,7 @@ public class Admin {
                     statement.executeUpdate();
                     System.out.println("Successfully rejected " + post);
                 } catch (SQLException e){
-                    System.out.println(e.getMessage());
+                    throw new IllegalStateException("Unexpected value: " + e.getMessage());
                 }
                 break;
             case 3:
@@ -1013,7 +1013,7 @@ public class Admin {
             statement.executeUpdate();
             System.out.println("Post Data Updated");
         } catch (SQLException e){
-            System.out.println(e.getMessage());
+            throw new IllegalStateException("Unexpected value: " + e.getMessage());
         }
     }
     private static void ViewPost(Connection connection){
@@ -1037,7 +1037,7 @@ public class Admin {
                 } while (resultSet.next());
             }
         } catch (SQLException e){
-            System.out.println(e.getMessage());
+            throw new IllegalStateException("Unexpected value: " + e.getMessage());
         }
     }
 }

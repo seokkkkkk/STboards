@@ -80,7 +80,7 @@ public class User {
                 }
             }
         } catch (SQLException e){
-            System.out.println(e.getMessage());
+            throw new IllegalStateException("Unexpected value: " + e.getMessage());
         }
         System.out.println("-----------------------------------------");
         System.out.print("Select place: ");
@@ -134,7 +134,7 @@ public class User {
             System.out.println("-----------------------------------------");
             System.out.println("Post applied successfully");
         } catch (SQLException e){
-            System.out.println(e.getMessage());
+            throw new IllegalStateException("Unexpected value: " + e.getMessage());
         }
     }
 
@@ -207,7 +207,7 @@ public class User {
                     System.out.println("-----------------------------------------");
                     System.out.println("Post canceled successfully");
                 } catch (SQLException e){
-                    System.out.println(e.getMessage());
+                    throw new IllegalStateException("Unexpected value: " + e.getMessage());
                 }
                 break;
             case 2:
