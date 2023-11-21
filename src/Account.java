@@ -12,7 +12,7 @@ public class Account {
         System.out.print("Password: ");
         String pw = sc.nextLine();
         System.out.println("-----------------------------------------");
-        String query = "SELECT * FROM USER WHERE id = ? AND pw = ?";
+        String query = "SELECT * FROM USER WHERE BINARY id = ? AND BINARY pw = ?";
         try (PreparedStatement statement = connection.prepareStatement(query)) {
             statement.setString(1, id);
             statement.setString(2, pw);

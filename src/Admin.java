@@ -30,7 +30,7 @@ public class Admin {
                 placeManagementProcess(connection);
                 return false;
             case 3:
-                boardManagementProcess(connection);
+                boardManagementProcess(connection, user);
                 return false;
             case 4:
                 postManagementProcess(connection, user);
@@ -87,7 +87,8 @@ public class Admin {
         System.out.println("-----------------------------------------");
         System.out.println("1. Request confirmation");
         System.out.println("2. View posts");
-        System.out.println("3. Back");
+        System.out.println("3. Cancel posts");
+        System.out.println("4. Back");
         System.out.println("-----------------------------------------");
         System.out.print("Select menu: ");
 
@@ -102,6 +103,9 @@ public class Admin {
                 ViewPost(connection);
                 break;
             case 3:
+                CancelPost(connection, user);
+                break;
+            case 4:
                 break;
             default:
                 throw new IllegalStateException("Unexpected value: " + menu);
@@ -170,7 +174,7 @@ public class Admin {
         }
     }
 
-    public static void boardManagementProcess(Connection connection) throws SQLException {
+    public static void boardManagementProcess(Connection connection, User user) throws SQLException {
         System.out.println("-----------------------------------------");
         System.out.println("Board management");
         System.out.println("-----------------------------------------");
@@ -186,10 +190,10 @@ public class Admin {
 
         switch (menu) {
             case 1:
-                CreateBoard(connection);
+                CreateBoard(connection, user);
                 break;
             case 2:
-                DeleteBoard(connection);
+                DeleteBoard(connection, user);
                 break;
             case 3:
                 ViewBoard(connection);
@@ -209,14 +213,7 @@ public class Admin {
         System.out.println("-----------------------------------------");
         String board_sql2 = "SELECT * FROM BOARD ORDER BY place_id, floor";
         try (PreparedStatement statement = connection.prepareStatement(board_sql2)) {
-            try (ResultSet resultSet = statement.executeQuery()) {
-                if (!resultSet.next()) {
-                    throw new SQLException("No Board Found");
-                }
-                do {
-                    System.out.println("PLACE:" + resultSet.getInt(2) + " FLOOR:" + resultSet.getInt(5) + " BOARD:" + resultSet.getInt(1)+ ". " + resultSet.getString(3));
-                } while (resultSet.next());
-            }
+            BoardView(statement);
         } catch (SQLException e){
             System.out.println(e.getMessage());
         }
@@ -243,13 +240,26 @@ public class Admin {
             System.out.println(e.getMessage());
         }
     }
-    private static void CreateBoard(Connection connection) throws SQLException {
+
+    private static void BoardView(PreparedStatement statement) throws SQLException {
+        try (ResultSet resultSet = statement.executeQuery()) {
+            if (!resultSet.next()) {
+                throw new SQLException("No Board Found");
+            }
+            do {
+                System.out.println("PLACE:" + resultSet.getInt(2) + " FLOOR:" + resultSet.getInt(5) + " BOARD:" + resultSet.getInt(1)+ ". " + resultSet.getString(3));
+            } while (resultSet.next());
+        }
+    }
+
+    private static void CreateBoard(Connection connection, User user) throws SQLException {
         Scanner sc = new Scanner(System.in);
         System.out.println("-----------------------------------------");
         System.out.println("Create a board");
         System.out.println("-----------------------------------------");
-        String place_sql = "SELECT * FROM PLACE";
+        String place_sql = "SELECT * FROM PLACE INNER JOIN USER_DEPART ON PLACE.depart_id = USER_DEPART.depart_id WHERE USER_DEPART.user_id = ? ORDER BY place_id, floor";
         try (PreparedStatement statement = connection.prepareStatement(place_sql)) {
+            statement.setInt(1, user.user_id);
             try (ResultSet resultSet = statement.executeQuery()) {
                 if (!resultSet.next()) {
                     throw new SQLException("No Place Found");
@@ -259,15 +269,16 @@ public class Admin {
                 } while (resultSet.next());
             }
         } catch (SQLException e){
-            System.out.println(e.getMessage());
+            throw new IllegalStateException("Unexpected value: " + e.getMessage());
         }
         System.out.println("-----------------------------------------");
         System.out.print("Insert place number: ");
         int place = sc.nextInt();
-        int maxfloor = 0;
-        String floor_sql = "SELECT floor FROM PLACE WHERE place_id = ?";
+        int maxfloor;
+        String floor_sql = "SELECT floor FROM PLACE INNER JOIN USER_DEPART ON PLACE.depart_id = USER_DEPART.depart_id WHERE USER_DEPART.user_id = ? AND place_id = ?";
         try (PreparedStatement statement = connection.prepareStatement(floor_sql)) {
-            statement.setInt(1, place);
+            statement.setInt(1, user.user_id);
+            statement.setInt(2, place);
             try (ResultSet resultSet = statement.executeQuery()) {
                 if (!resultSet.next()) {
                     throw new SQLException("No Place Found");
@@ -276,12 +287,11 @@ public class Admin {
                     maxfloor = resultSet.getInt(1);
                 } while (resultSet.next());
             }
-            System.out.println();
         } catch (SQLException e){
-            System.out.println(e.getMessage());
+            throw new IllegalStateException("Unexpected value: " + e.getMessage());
         }
         System.out.println("-----------------------------------------");
-        System.out.print("Insert located floor: ");
+        System.out.print("Insert located floor(MAX:" + maxfloor + "): ");
         int floor = sc.nextInt();
         if (floor > maxfloor){
             throw new SQLException("Invalid floor");
@@ -305,26 +315,19 @@ public class Admin {
             System.out.println(e.getMessage());
         }
     }
-    private static void DeleteBoard(Connection connection) {
+    private static void DeleteBoard(Connection connection, User user) {
         Scanner sc = new Scanner(System.in);
         System.out.println("-----------------------------------------");
         System.out.println("Delete a board");
         System.out.println("-----------------------------------------");
 
         // BOARD 테이블 출력
-        String board_sql = "SELECT * FROM BOARD ORDER BY place_id, floor";
+        String board_sql = "SELECT * FROM BOARD INNER JOIN PLACE ON BOARD.place_id = PLACE.place_id INNER USER_DEPART ON PLACE.depart_id = USER_DEPART.depart_id WHERE USER_DEPART.user_id = ? ORDER BY place_id, floor";
         try (PreparedStatement statement = connection.prepareStatement(board_sql)) {
-            try (ResultSet resultSet = statement.executeQuery()) {
-                if (!resultSet.next()) {
-                    throw new SQLException("No Board Found");
-                }
-                do {
-                    System.out.print(resultSet.getInt("board_id") + ". " + resultSet.getString("board_name") + " ");
-                } while (resultSet.next());
-                System.out.println();
-            }
-        } catch (SQLException e) {
-            System.out.println(e.getMessage());
+            statement.setInt(1, user.user_id);
+            BoardView(statement);
+        } catch (SQLException e){
+            throw new IllegalStateException("Unexpected value: " + e.getMessage());
         }
 
         System.out.println("-----------------------------------------");
@@ -420,6 +423,9 @@ public class Admin {
     private static void ViewAllPlace(Connection connection) {
         System.out.println("-----------------------------------------");
         System.out.println("View all place");
+        AllPlaceTable(connection);
+    }
+    private static void AllPlaceTable(Connection connection){
         System.out.println("-----------------------------------------");
         String place_sql2 = "SELECT * FROM PLACE";
         try (PreparedStatement statement = connection.prepareStatement(place_sql2)) {
@@ -431,7 +437,7 @@ public class Admin {
                     System.out.println(resultSet.getInt(2) + ". " + resultSet.getString(3) + " " + resultSet.getString(4) + "층");
                 } while (resultSet.next());
             }
-        } catch (SQLException e){
+        } catch (SQLException e) {
             System.out.println(e.getMessage());
         }
     }
@@ -674,7 +680,6 @@ public class Admin {
         System.out.println("-----------------------------------------");
         System.out.print("Department name: ");
         String name = sc.nextLine();
-        System.out.println("-----------------------------------------");
         String query = "INSERT INTO DEPARTMENT (depart_name) VALUES (?)";
         try (PreparedStatement statement = connection.prepareStatement(query)) {
             statement.setString(1, name);
@@ -722,14 +727,12 @@ public class Admin {
             System.out.println(e.getMessage());
         }
     }
-    private static void RequestConfirm(Connection connection, User user){
-        Scanner sc = new Scanner(System.in);
-        System.out.println("-----------------------------------------");
-        System.out.println("Request confirmation");
+
+    private static void ManageablePlace(Connection connection, User user){
         System.out.println("-----------------------------------------");
         System.out.println("Manageable place list");
         System.out.println("-----------------------------------------");
-        String place_sql = "SELECT * FROM PLACE INNER JOIN USER_DEPART ON PLACE.depart_id = USER_DEPART.depart_id WHERE USER_DEPART.user_id = ?";
+        String place_sql = "SELECT * FROM PLACE INNER JOIN USER_DEPART ON PLACE.depart_id = USER_DEPART.depart_id WHERE USER_DEPART.user_id = ? ORDER BY place_id";
         try (PreparedStatement statement = connection.prepareStatement(place_sql)) {
             statement.setInt(1, user.user_id);
             try (ResultSet resultSet = statement.executeQuery()) {
@@ -743,12 +746,10 @@ public class Admin {
         } catch (SQLException e){
             System.out.println(e.getMessage());
         }
-        System.out.println("-----------------------------------------");
-        System.out.print("Insert place number: ");
-        int place = sc.nextInt();
-        System.out.println("-----------------------------------------");
-        System.out.println("Request Board list");
-        //place가 속한 depart_id와 user의 depart_id가 같은지 확인
+    }
+
+    private static void PlaceValidationCheck(Connection connection, User user, int place){
+        //place가 속한 department와 user가 속한 user_depart의 depart_id가 같은지 확인
         String place_depart_sql = "SELECT count(*) FROM PLACE INNER JOIN USER_DEPART ON PLACE.depart_id = USER_DEPART.depart_id WHERE place_id = ? AND USER_DEPART.user_id = ?";
         try (PreparedStatement statement = connection.prepareStatement(place_depart_sql)) {
             statement.setInt(1, place);
@@ -756,14 +757,129 @@ public class Admin {
             try (ResultSet resultSet = statement.executeQuery()) {
                 if (resultSet.next()) {
                     if (resultSet.getInt(1) == 0) {
-                        System.out.println("You cannot manage this place.");
-                        return; // 함수 종료
+                        throw new SQLException("You cannot manage this place.");
                     }
+                }
+            }
+        } catch (SQLException e){
+            throw new IllegalStateException("Unexpected value: " + e.getMessage());
+        }
+    }
+
+    public static void CancelPost(Connection connection, User user){
+        Scanner sc = new Scanner(System.in);
+        System.out.println("-----------------------------------------");
+        System.out.println("Cancel posts");
+        ManageablePlace(connection, user);
+        System.out.println("-----------------------------------------");
+        System.out.print("Insert place number: ");
+        int place = sc.nextInt();
+        System.out.println("-----------------------------------------");
+        System.out.println("Approved Board list");
+        System.out.println("-----------------------------------------");
+        PlaceValidationCheck(connection, user, place);
+        String place_board_sql = "SELECT BOARD.*, COUNT(POST.post_id) AS NumOfRequestPosts FROM BOARD INNER JOIN POST ON BOARD.board_id = POST.board_id WHERE BOARD.place_id = ? AND POST.status = 'approved' GROUP BY BOARD.board_id ORDER BY BOARD.floor";
+        try (PreparedStatement statement = connection.prepareStatement(place_board_sql)) {
+            statement.setInt(1, place);
+            try (ResultSet resultSet = statement.executeQuery()) {
+                if (!resultSet.next()) {
+                    throw new SQLException("No Post Request");
+                }
+                do {
+                    System.out.println(resultSet.getInt(1) + ". " + resultSet.getString(3) + " FLOOR:" + resultSet.getInt(5) + " SLOT:" + resultSet.getInt(4) + " REQUESTS:" + resultSet.getInt(6));
+                } while (resultSet.next());
+            }
+        } catch (SQLException e){
+            System.out.println(e.getMessage());
+        }
+        System.out.println("-----------------------------------------");
+        System.out.print("Insert board number: ");
+        int board = sc.nextInt();
+        System.out.println("-----------------------------------------");
+        String post_sql = "SELECT * FROM POST WHERE board_id = ? AND status = 'approved' ORDER BY request_time";
+        try (PreparedStatement statement = connection.prepareStatement(post_sql)) {
+            statement.setInt(1, board);
+            try (ResultSet resultSet = statement.executeQuery()) {
+                if (!resultSet.next()) {
+                    throw new SQLException("No Post Request");
+                }
+                do {
+                    System.out.println("POST NO." + resultSet.getInt(1) +" USER: " + resultSet.getInt(2) +  " POST: " + resultSet.getString(4) + " DESCRIPTION: " + resultSet.getString(7) + " SIZE: " + resultSet.getInt(6) + " TIMESTAMP: " + resultSet.getTimestamp(9));
+                } while (resultSet.next());
+            }
+        } catch (SQLException e){
+            System.out.println(e.getMessage());
+        }
+        System.out.println("-----------------------------------------");
+        System.out.print("Insert post number: ");
+        int post = sc.nextInt();
+        System.out.println("-----------------------------------------");
+        String post_sql2 = "SELECT * FROM POST WHERE post_id = ?";
+        try (PreparedStatement statement = connection.prepareStatement(post_sql2)) {
+            statement.setInt(1, post);
+            try (ResultSet resultSet = statement.executeQuery()) {
+                if (resultSet.next()) {
+                    System.out.println("Post ID: " + resultSet.getInt(1));
+                    System.out.println("Post title: " + resultSet.getString(4));
+                    System.out.println("Post content: " + resultSet.getString(7));
+                    System.out.println("Post size: " + resultSet.getInt(6));
+                    System.out.println("Post user ID: " + resultSet.getInt(2));
+                    System.out.println("Post board ID: " + resultSet.getInt(3));
                 }
             }
         } catch (SQLException e){
             System.out.println(e.getMessage());
         }
+        System.out.println("-----------------------------------------");
+        System.out.println("1. Cancel Post");
+        System.out.println("2. Back");
+        System.out.println("-----------------------------------------");
+        System.out.print("Select menu: ");
+        int menu = sc.nextInt();
+
+        switch (menu) {
+            case 1:
+                //post가 속한 board의 place_id를 placeid 변수에 저장
+                int placeid = 0;
+                String place_sql2 = "SELECT place_id FROM BOARD WHERE board_id = (SELECT board_id FROM POST WHERE post_id = ?)";
+                try (PreparedStatement statement = connection.prepareStatement(place_sql2)) {
+                    statement.setInt(1, post);
+                    try (ResultSet resultSet = statement.executeQuery()) {
+                        if (resultSet.next()) {
+                            placeid = resultSet.getInt(1);
+                        }
+                    }
+                } catch (SQLException e){
+                    System.out.println(e.getMessage());
+                }
+                PlaceValidationCheck(connection, user, placeid);
+                String query = "UPDATE POST SET status = 'cancelled' WHERE post_id = ?";
+                try (PreparedStatement statement = connection.prepareStatement(query)) {
+                    statement.setInt(1, post);
+                    statement.executeUpdate();
+                    System.out.println("Successfully cancelled " + post);
+                } catch (SQLException e){
+                    System.out.println(e.getMessage());
+                }
+                break;
+            case 2:
+                break;
+            default:
+                throw new IllegalStateException("Unexpected value: " + menu);
+        }
+    }
+
+    private static void RequestConfirm(Connection connection, User user){
+        Scanner sc = new Scanner(System.in);
+        System.out.println("-----------------------------------------");
+        System.out.println("Request confirmation");
+        ManageablePlace(connection, user);
+        System.out.println("-----------------------------------------");
+        System.out.print("Insert place number: ");
+        int place = sc.nextInt();
+        System.out.println("-----------------------------------------");
+        System.out.println("Request Board list");
+        PlaceValidationCheck(connection, user, place);
         String place_board_sql = "SELECT BOARD.*, COUNT(POST.post_id) AS NumOfRequestPosts FROM BOARD INNER JOIN POST ON BOARD.board_id = POST.board_id WHERE BOARD.place_id = ? AND POST.status = 'pending' GROUP BY BOARD.board_id ORDER BY BOARD.floor";
         try (PreparedStatement statement = connection.prepareStatement(place_board_sql)) {
             statement.setInt(1, place);
@@ -800,8 +916,6 @@ public class Admin {
         System.out.print("Insert post number: ");
         int post = sc.nextInt();
         System.out.println("-----------------------------------------");
-
-
         // 선택한 POST의 size 확인
         int postSize = 0;
         String postSizeSql = "SELECT size FROM POST WHERE post_id = ?";
@@ -906,21 +1020,7 @@ public class Admin {
         Scanner sc = new Scanner(System.in);
         System.out.println("-----------------------------------------");
         System.out.println("View posts");
-        System.out.println("-----------------------------------------");
-        String post_place = "SELECT * FROM PLACE";
-        try (PreparedStatement statement = connection.prepareStatement(post_place)) {
-            try (ResultSet resultSet = statement.executeQuery()) {
-                if (!resultSet.next()) {
-                    throw new SQLException("No Place Found");
-                }
-                do {
-                    System.out.print(resultSet.getInt(2) + ". " + resultSet.getString(3) + " ");
-                } while (resultSet.next());
-            }
-            System.out.println();
-        } catch (SQLException e){
-            System.out.println(e.getMessage());
-        }
+        AllPlaceTable(connection);
         System.out.println("-----------------------------------------");
         System.out.print("Insert post location: ");
         int place_id = sc.nextInt();

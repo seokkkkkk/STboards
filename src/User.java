@@ -86,21 +86,34 @@ public class User {
         System.out.print("Select place: ");
         Scanner sc = new Scanner(System.in);
         int place_id = sc.nextInt();
-        System.out.println("-----------------------------------------");
         String selected_place = "SELECT * FROM place INNER JOIN BOARD ON place.place_id = board.place_id WHERE place.place_id = ? ORDER BY board.floor";
         try (PreparedStatement statement = connection.prepareStatement(selected_place)) {
             statement.setInt(1, place_id);
             try (ResultSet resultSet = statement.executeQuery()) {
-                while (resultSet.next()) {
+                if (!resultSet.next()) {
+                    throw new SQLException("Invalid place");
+                }
+                do {
                     System.out.println(resultSet.getInt(5) + ". " + resultSet.getString(3) + " " + resultSet.getString(9) + "층 " + resultSet.getString(7));
+                } while (resultSet.next());
+            }
+        } catch (SQLException e){
+            throw new IllegalStateException("Unexpected value: " + e.getMessage());
+        }
+        System.out.print("Choose Board: ");
+        int board_id = sc.nextInt();
+        String board_check = "SELECT * FROM board WHERE board_id = ? AND place_id = ?";
+        try (PreparedStatement statement = connection.prepareStatement(board_check)) {
+            statement.setInt(1, board_id);
+            statement.setInt(2, place_id);
+            try (ResultSet resultSet = statement.executeQuery()) {
+                if (!resultSet.next()) {
+                    throw new SQLException("Invalid board");
                 }
             }
         } catch (SQLException e){
-            System.out.println(e.getMessage());
+            throw new IllegalStateException("Unexpected value: " + e.getMessage());
         }
-        System.out.println("-----------------------------------------");
-        System.out.print("Choose Board: ");
-        int board = sc.nextInt();
         System.out.println("-----------------------------------------");
         System.out.print("Insert post name: ");
         sc.nextLine();
@@ -112,7 +125,7 @@ public class User {
         String insert_post = "INSERT INTO post (user_id, board_id, post_name, size, description, request_time) VALUES (?, ?, ?, ?, ?, ?)";
         try (PreparedStatement statement = connection.prepareStatement(insert_post)) {
             statement.setInt(1, user.user_id);
-            statement.setInt(2, board);
+            statement.setInt(2, board_id);
             statement.setString(3, post_name);
             statement.setInt(4, require_slot);
             statement.setString(5, post_content);
@@ -129,37 +142,44 @@ public class User {
         System.out.println("-----------------------------------------");
         System.out.println("View my posts");
         System.out.println("-----------------------------------------");
-        String my_posts = "SELECT * FROM post INNER JOIN board ON post.board_id = board.board_id INNER JOIN place ON board.place_id = place.place_id WHERE user_id = ? order by status desc";
+        String my_posts = "SELECT * FROM post INNER JOIN board ON post.board_id = board.board_id INNER JOIN place ON board.place_id = place.place_id WHERE user_id = ? order by status";
         try (PreparedStatement statement = connection.prepareStatement(my_posts)) {
             statement.setInt(1, user.user_id);
             try (ResultSet resultSet = statement.executeQuery()) {
-                while (resultSet.next()) {
-                    System.out.println("["+resultSet.getString(8) + "] " + resultSet.getInt(1) + ". " + resultSet.getString(17) + " " +resultSet.getString(14) + "층 "  + resultSet.getString(4));
+                if (!resultSet.next()) {
+                    throw new SQLException("No post found");
                 }
+                do {
+                    System.out.println("["+resultSet.getString(8) + "] " + resultSet.getInt(1) + ". " + resultSet.getString(17) + " " +resultSet.getString(14) + "층 "  + resultSet.getString(4));
+                } while (resultSet.next());
             }
         } catch (SQLException e){
-            System.out.println(e.getMessage());
+            throw new IllegalStateException(e.getMessage());
         }
         System.out.println("-----------------------------------------");
         System.out.print("Select post: ");
         Scanner sc = new Scanner(System.in);
         int post_id = sc.nextInt();
         System.out.println("-----------------------------------------");
-        String selected_post = "SELECT * FROM post INNER JOIN board ON post.board_id = board.board_id INNER JOIN place ON board.place_id = place.place_id WHERE post_id = ?";
+        String selected_post = "SELECT * FROM post INNER JOIN board ON post.board_id = board.board_id INNER JOIN place ON board.place_id = place.place_id WHERE post_id = ? AND user_id = ?";
         try (PreparedStatement statement = connection.prepareStatement(selected_post)) {
             statement.setInt(1, post_id);
+            statement.setInt(2, user.user_id);
             try (ResultSet resultSet = statement.executeQuery()) {
-                while (resultSet.next()) {
+                if (!resultSet.next()) {
+                    throw new SQLException("Invalid post");
+                }
+                do {
                     System.out.println("Post name: " + resultSet.getString(4));
                     System.out.println("Post content: " + resultSet.getString(7));
                     System.out.println("Require slot size: " + resultSet.getInt(6));
                     System.out.println("Request time: " + resultSet.getTimestamp(9));
                     System.out.println("Expired time: " + resultSet.getTimestamp(5));
                     System.out.println("Status: " + resultSet.getString(8));
-                }
+                } while (resultSet.next());
             }
         } catch (SQLException e){
-            System.out.println(e.getMessage());
+            throw new IllegalStateException("Unexpected value: " + e.getMessage());
         }
         System.out.println("-----------------------------------------");
         System.out.println("1. Cancel post");
@@ -169,6 +189,17 @@ public class User {
         int menu = sc.nextInt();
         switch (menu) {
             case 1:
+                String post_status = "SELECT * FROM post WHERE post_id = ? AND status = 'pending'";
+                try (PreparedStatement statement = connection.prepareStatement(post_status)) {
+                    statement.setInt(1, post_id);
+                    try (ResultSet resultSet = statement.executeQuery()) {
+                        if (!resultSet.next()) {
+                            throw new SQLException("This post is not pending");
+                        }
+                    }
+                } catch (SQLException e){
+                    throw new IllegalStateException("Unexpected value: " + e.getMessage());
+                }
                 String cancel_post = "UPDATE post SET status = 'cancel' WHERE post_id = ?";
                 try (PreparedStatement statement = connection.prepareStatement(cancel_post)) {
                     statement.setInt(1, post_id);
